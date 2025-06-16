@@ -42,15 +42,16 @@ read_loop:
   syscall
 
   test %rax, %rax
-  je done_reading
+  je end_reading
   js exit
 
   addq %rax, %r14
+  jmp read_loop
 
 end_reading:
   # Clean used registers
   xor %rax, %rax
-  xor %r13, %r13
+  xor %r13, %r13              # will point to the end of the buffer
   xor %r8, %r8                # will be used to hold the amount of bytes of a token
   xor %r9, %r9                # will be used to count the amount of tokens
   
@@ -62,12 +63,14 @@ end_reading:
   
 token_loop:
   cmpq %r13, %rsi           # Check if reached the end of bytes readen
-  je exit
+  je close_file
 
   movb (%rsi), %al
 
   cmpb $0, %al
-  je exit
+  je close_file
+
+  jmp scan_byte
 
 scan_byte:        # If char is a separation char just subtitute it for a delimiter \0
   cmpb $' ', %al
@@ -78,9 +81,9 @@ scan_byte:        # If char is a separation char just subtitute it for a delimit
 
   jmp add_byte
 
-add_byte:
+add_byte: 
   incq %r8        # increase offset
-  
+ 
   cmpb $'\n', %al
   je end_line
 
@@ -93,7 +96,7 @@ add_delimiter:
   jmp end_line
 
 end_line:
-  cmpq $1, %r8
+  cmpq $0, %r8
   jne end_token
 
   jmp next_byte
@@ -113,7 +116,8 @@ end_token:
   addq $8, %r10 # point to the next available spot in token_ptrs_buffer
   incl %r9d
   xor %r8, %r8 # reset amount of bytes of the token
-  jmp token_loop
+
+  jmp next_byte
 
 close_file:
   movq $3, %rax
@@ -121,6 +125,18 @@ close_file:
 
   syscall
 
+  xor %r13, %r13    # clear %r13
+  jmp print_tokens
+
+print_tokens:
+  movq $1, %rax
+  movq $1, %rdi
+  
+  leaq input_buffer(%rip), %rsi
+
+  movq %r14, %rdx
+
+  syscall
   jmp exit
 
 exit_overflow:
