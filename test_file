@@ -1,6 +1,9 @@
 .section .text
 mov rax rax
 mov 1 rax
-1
+1 a     ;
 
+
+ 
+  
 

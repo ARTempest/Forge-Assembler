@@ -79,18 +79,17 @@ scan_byte:        # If char is a separation char just subtitute it for a delimit
   cmpb $'\t', %al
   je add_delimiter
 
+  cmpb $'\n', %al
+  je check_empty_line
+
   jmp add_byte
 
 add_byte: 
   incq %r8        # increase offset
- 
-  cmpb $'\n', %al
-  je check_empty_line
-  
   jmp next_byte
 
 check_empty_line:
-  cmpq $1, %r8
+  cmpq $1, %r8      
   je add_delimiter
 
   jmp end_line
@@ -104,7 +103,7 @@ add_delimiter:
   jmp end_line
 
 end_line:
-  cmpq $0, %r8
+  cmpq $0, %r8      # If the token has at least one byte readen jmp end_token
   jne end_token
 
   jmp next_byte
@@ -115,7 +114,9 @@ end_token:
   cmpl %ecx, %r9d
   je exit_overflow
 
+
   # Move beginning of the token address to token_ptrs_buffer closest available spot
+  xor %rax, %rax
   movq %rsi, %rax
   subq %r8, %rax
   movq %rax, (%r10)
@@ -125,6 +126,7 @@ end_token:
   incl %r9d
   xor %r8, %r8 # reset amount of bytes of the token
 
+  #########################decq %r8, %r8     # TEST
   jmp next_byte
 
 close_file:
