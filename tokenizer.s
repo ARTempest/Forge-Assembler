@@ -85,7 +85,15 @@ add_byte:
   incq %r8        # increase offset
  
   cmpb $'\n', %al
-  je end_line
+  je check_empty_line
+  
+  jmp next_byte
+
+check_empty_line:
+  cmpq $1, %r8
+  je add_delimiter
+
+  jmp end_line
 
 next_byte:      # Increase the index in one
   incq %rsi
