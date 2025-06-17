@@ -53,6 +53,8 @@ end_reading:
   xor %r13, %r13              # will point to the end of the buffer
   xor %r8, %r8                # will be used to hold the amount of bytes of a token
   xor %r9, %r9                # will be used to count the amount of tokens
+  xor %r11, %r11              # will hold a bool 0 (true) 1 (false) of if the next byte is part of a comment
+  movb $1, %r11b
   xor %r12, %r12              # will hold a bool 0 (true) 1 (false) of if it is the beginning of the line
 
   xor %r10, %r10              # will point to token_ptrs
@@ -69,19 +71,27 @@ token_loop:
 
   cmpb $0, %al
   je close_file
-
+  
   jmp scan_byte
 
 scan_byte:        # If char is a separation char just subtitute it for a delimiter \0
-  cmpb $' ', %al
-  je add_delimiter
-
-  cmpb $'\t', %al
-  je add_delimiter
-
-  cmpb $'\n', %al
+  
+  cmpb $10, %al     # Check if the byte is a  \n (new line)
   je check_empty_line
 
+  cmpb $0, %r11b
+  je add_delimiter
+
+  cmpb $32, %al     # Check if byte is ' ' (a space)
+  je add_delimiter
+
+  cmpb $9, %al      # Check if byte is a \t (tab)
+  je add_delimiter
+
+   cmpb $59, %al     # Check if the byte is a ';' (semi-colon)
+  je comment_token
+
+ 
   jmp add_byte
 
 add_byte: 
@@ -96,6 +106,7 @@ check_empty_line:
 
 empty_line:
   movb $0, %r12b    # Set line to empty again
+  movb $1, %r11b    # next line is not a comment
   jmp add_delimiter
 
 next_byte:     
@@ -138,8 +149,13 @@ end_token:
   jmp next_byte
 
 new_line_token:
-  movb $0, %r12b   
+  movb $0, %r12b
+  movb $1, %r11b      # Set next line not a comment
   jmp next_byte
+
+comment_token:
+  movb $0, %r11b   # set the rest of the line as a comment
+  jmp token_loop
 
 close_file:
   movq $3, %rax

@@ -4,7 +4,7 @@
     
 ### Tokenizer
 
-- [ ] Support Comments.
+- [x] Support Comments.
 - [ ] Document it better (add more and better comments).
 
 
