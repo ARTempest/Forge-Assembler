@@ -53,9 +53,9 @@ end_reading:
   xor %r13, %r13              # will point to the end of the buffer
   xor %r8, %r8                # will be used to hold the amount of bytes of a token
   xor %r9, %r9                # will be used to count the amount of tokens
-  xor %r11, %r11              # will hold a bool 0 (true) 1 (false) of if the next byte is part of a comment
-  movb $1, %r11b
-  xor %r12, %r12              # will hold a bool 0 (true) 1 (false) of if it is the beginning of the line
+  xor %r11, %r11              # will simulate a ZF of if the next byte is part of a comment where 0 = false and 1 = true
+  xor %r12, %r12              # will simulate a ZF of if it is an empty line where 0 = false and 1 = true
+  movb $1, %r12b              # Set first line empty as default
 
   xor %r10, %r10              # will point to token_ptrs
   leaq token_ptrs_buffer(%rip), %r10
@@ -79,7 +79,7 @@ scan_byte:        # If char is a separation char just subtitute it for a delimit
   cmpb $10, %al     # Check if the byte is a  \n (new line)
   je check_empty_line
 
-  cmpb $0, %r11b
+  cmpb $1, %r11b
   je add_delimiter
 
   cmpb $32, %al     # Check if byte is ' ' (a space)
@@ -99,14 +99,13 @@ add_byte:
   jmp next_byte
 
 check_empty_line:
-  cmpb $0, %r12b     # Check if is an empty line
+  cmpb $1, %r12b     # Check if is an empty line
   je empty_line
 
   jmp end_token
 
 empty_line:
-  movb $0, %r12b    # Set line to empty again
-  movb $1, %r11b    # next line is not a comment
+  movb $0, %r11b    # next line is not a comment
   jmp add_delimiter
 
 next_byte:     
@@ -145,16 +144,16 @@ end_token:
   cmpb $'\n', %al
   je new_line_token
 
-  movb $1, %r12b    # Confirm the line isnt empty
+  movb $0, %r12b    # Confirm the line isnt empty
   jmp next_byte
 
 new_line_token:
-  movb $0, %r12b
-  movb $1, %r11b      # Set next line not a comment
+  movb $1, %r12b      # Set next line as empty
+  movb $0, %r11b      # Set next line as not a comment
   jmp next_byte
 
 comment_token:
-  movb $0, %r11b   # set the rest of the line as a comment
+  movb $1, %r11b   # set the rest of the line as a comment
   jmp token_loop
 
 close_file:

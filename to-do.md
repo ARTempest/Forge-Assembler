@@ -4,9 +4,14 @@
     
 ### Tokenizer
 
+#### Needed
+
 - [x] Support Comments.
 - [ ] Document it better (add more and better comments).
 
+#### Optional/Minor
+
+- [x] Change %r11, %r12 from a "bool" to a ZF simulator
 
 ## To-Fix
 
