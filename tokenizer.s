@@ -17,7 +17,6 @@ token_ptrs_buffer:
 .section .text
 .globl _start
 
-
 _start:
   
 open_file:
@@ -54,7 +53,8 @@ end_reading:
   xor %r13, %r13              # will point to the end of the buffer
   xor %r8, %r8                # will be used to hold the amount of bytes of a token
   xor %r9, %r9                # will be used to count the amount of tokens
-  
+  xor %r12, %r12              # will hold a bool 0 (true) 1 (false) of if it is the beginning of the line
+
   xor %r10, %r10              # will point to token_ptrs
   leaq token_ptrs_buffer(%rip), %r10
 
@@ -89,13 +89,17 @@ add_byte:
   jmp next_byte
 
 check_empty_line:
-  cmpq $1, %r8      
-  je add_delimiter
+  cmpb $0, %r12b     # Check if is an empty line
+  je empty_line
 
-  jmp end_line
+  jmp end_token
 
-next_byte:      # Increase the index in one
-  incq %rsi
+empty_line:
+  movb $0, %r12b    # Set line to empty again
+  jmp add_delimiter
+
+next_byte:     
+  incq %rsi         # Increase the index in one
   jmp token_loop
 
 add_delimiter:
@@ -108,12 +112,10 @@ end_line:
 
   jmp next_byte
 
-
 end_token:
   movl MAX_TOKENS(%rip), %ecx
   cmpl %ecx, %r9d
   je exit_overflow
-
 
   # Move beginning of the token address to token_ptrs_buffer closest available spot
   xor %rax, %rax
@@ -121,12 +123,22 @@ end_token:
   subq %r8, %rax
   movq %rax, (%r10)
 
-
   addq $8, %r10 # point to the next available spot in token_ptrs_buffer
   incl %r9d
   xor %r8, %r8 # reset amount of bytes of the token
 
-  #########################decq %r8, %r8     # TEST
+  xor %rax, %rax
+  movb (%rsi), %al
+  
+ # If the token's last byte is a \n the next one will be an empty line
+  cmpb $'\n', %al
+  je new_line_token
+
+  movb $1, %r12b    # Confirm the line isnt empty
+  jmp next_byte
+
+new_line_token:
+  movb $0, %r12b   
   jmp next_byte
 
 close_file:
