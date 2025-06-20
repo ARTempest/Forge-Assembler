@@ -1,9 +1,0 @@
-.section .text  ; use section text
-mov rax rax 
-mov 1 rax
-1 a     ;
-
-
- 
-  
-

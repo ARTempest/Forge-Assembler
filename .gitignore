@@ -1,2 +1,4 @@
-exec
-*.txt
+exec_test
+.compile.sh
+.parser.o
+.tokenizer.o
